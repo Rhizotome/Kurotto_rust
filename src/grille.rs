@@ -1,5 +1,5 @@
-use std::fs::File;
 use std::collections::HashSet;
+use std::fs::File;
 // Les conteneurs utilisé pour modéliser la formule : littéral, conteneur interne, médian et
 // externe
 type Litt = i32;
@@ -56,9 +56,20 @@ impl Grille {
             } else {
                 let mut sous_formule = CMed::new();
                 sous_formule.push(vec![-self.contrainte_to_litt(*i, *j, *p)]);
-                for forme in self.formes(*i,*j,*p).iter(){
+                for forme in self.formes(*i, *j, *p).iter() {
                     let mut sous_sous_formule = CInt::new();
+                    for (a,b) in forme.iter() {
+                        if *a != *i && *b != *j{
+                            sous_sous_formule.push(self.to_litt(*i,*j));
+                        }
+                    }
+                    sous_sous_formule.push(-self.to_litt(*i,*j));
+                    for (a,b) in self.bordure(forme){
+                        sous_sous_formule.push(-self.to_litt(a, b));
+                    }
+                    sous_formule.push(sous_sous_formule);
                 }
+                formule.push(sous_formule);
             }
         }
         formule
@@ -95,25 +106,24 @@ impl Grille {
 
     /// Donne l'ensemble des formes (ensemble de coordonnéees) qui sont autour de (i,j) et de
     /// taille p
-    fn formes(&self, i: u8, j: u8, p: i8) -> Vec<HashSet<(u8, u8)>>{
+    fn formes(&self, i: u8, j: u8, p: i8) -> Vec<HashSet<(u8, u8)>> {
         let mut centre = HashSet::<(u8, u8)>::new();
         centre.insert((i, j));
         self.formes_rec(vec![centre], p)
     }
 
     /// Fonction intermédiaire pour la réccurence
-    fn formes_rec(&self, centre: Vec<HashSet<(u8,u8)>>, p: i8) -> Vec<HashSet<(u8,u8)>>{
+    fn formes_rec(&self, centre: Vec<HashSet<(u8, u8)>>, p: i8) -> Vec<HashSet<(u8, u8)>> {
         if p == 0 {
             return centre;
-        }
-        else {
-            let mut retour = Vec::<HashSet<(u8,u8)>>::new();
-            let ensembleRec = self.formes_rec(centre, p - 1);
-            for forme in ensembleRec.iter(){
-                for (i,j) in forme.iter(){
-                    for (iv, jv) in self.voisins(*i, *j).iter(){
+        } else {
+            let mut retour = Vec::<HashSet<(u8, u8)>>::new();
+            let ensemble_rec = self.formes_rec(centre, p - 1);
+            for forme in ensemble_rec.iter() {
+                for (i, j) in forme.iter() {
+                    for (iv, jv) in self.voisins(*i, *j).iter() {
                         let mut forme_temp = forme.clone();
-                        if forme_temp.insert((*iv, *jv)){
+                        if forme_temp.insert((*iv, *jv)) {
                             retour.push(forme_temp);
                         }
                     }
@@ -121,5 +131,18 @@ impl Grille {
             }
             retour
         }
+    }
+
+    ///Renvoie les cases n'étant pas dans la centre mais étant en contact direct
+    fn bordure(&self, centre: &HashSet<(u8, u8)>) -> HashSet<(u8, u8)> {
+        let mut retour = HashSet::<(u8, u8)>::new();
+        for (i, j) in centre.iter(){
+            for v in self.voisins(*i,*j){
+                if !centre.contains(&v){
+                    retour.insert(v);
+                }
+            }
+        }
+        retour
     }
 }
