@@ -54,8 +54,10 @@ impl Grille {
                     vec![-self.contrainte_to_litt(*i, *j, *p)],
                 ]);
             } else {
-                for f in self.formes(*i,*j,*p).iter(){
-                    let sous_sous_formule: CInt = *f.iter().map(|(a,b)| self.to_litt(*a, *b)).collect();
+                let mut sous_formule = CMed::new();
+                sous_formule.push(vec![-self.contrainte_to_litt(*i, *j, *p)]);
+                for forme in self.formes(*i,*j,*p).iter(){
+                    let mut sous_sous_formule = CInt::new();
                 }
             }
         }
@@ -93,12 +95,31 @@ impl Grille {
 
     /// Donne l'ensemble des formes (ensemble de coordonnéees) qui sont autour de (i,j) et de
     /// taille p
-    fn formes(&self, i: u8, j: u8, p: i8) -> HashSet<Vec<(u8, u8)>>{
-        
+    fn formes(&self, i: u8, j: u8, p: i8) -> Vec<HashSet<(u8, u8)>>{
+        let mut centre = HashSet::<(u8, u8)>::new();
+        centre.insert((i, j));
+        self.formes_rec(vec![centre], p)
     }
 
     /// Fonction intermédiaire pour la réccurence
-    fn formes_rec(&self, centre: HashSet<Vec<(u8,u8)>>, p: i8){
-
+    fn formes_rec(&self, centre: Vec<HashSet<(u8,u8)>>, p: i8) -> Vec<HashSet<(u8,u8)>>{
+        if p == 0 {
+            return centre;
+        }
+        else {
+            let mut retour = Vec::<HashSet<(u8,u8)>>::new();
+            let ensembleRec = self.formes_rec(centre, p - 1);
+            for forme in ensembleRec.iter(){
+                for (i,j) in forme.iter(){
+                    for (iv, jv) in self.voisins(*i, *j).iter(){
+                        let mut forme_temp = forme.clone();
+                        if forme_temp.insert((*iv, *jv)){
+                            retour.push(forme_temp);
+                        }
+                    }
+                }
+            }
+            retour
+        }
     }
 }
